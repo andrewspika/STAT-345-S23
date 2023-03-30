@@ -1,0 +1,37 @@
+---
+title: "Phoenix Suns Shot Chart Report"
+font: 12pt
+name: "Andrew Spika"
+output: word_document
+---
+
+# Brief Report:
+
+```{r, include=FALSE, warning=FALSE, echo=FALSE, messages=FALSE, results="hide"}
+# Calling all the Code to produce the graphics
+source("~/R Scripts/Shot Charts.R")
+```
+
+```{r, fig.height=8, fig.width=8, fig.align='center', warning=FALSE, echo=FALSE}
+shot.chart.first.last.5yrs
+```
+
+### Findings
+
+-   Over time, the Suns have shot less and less mid-range shots (shots outside of the lane but inside the 3 point line)
+-   The number of three point shots taken is much higher in the more recent years (especially 2018, 2019, and 2020)
+-   There is a much higher concentration of shots taken and made in the lane, most notably visible from years 2017 through 2020
+
+### Further Detail
+
+-   The transition from mid-range shots to more three-point shots and shots much closer to the basket is evident based on the shot charts from 2001 to 2020. It can be seen in the earlier years much more concentrated bins, both makes and misses, in areas between the lane and three-point line (the mid-range) to the right and left of the basket. This is much different than the years 2018, 2019, and 2020 which all have much fewer bins in this same area. Each year from about 2001 to 2017 have a more scattered distribution of shot bins. Particularly the transitionary years between the earlier and more recent years all have similar distributions of shot. For that reason, the shot charts for the first 5 and last 5 years between 2001 and 2020 have been selected. While it does seem that some years show less concentration of mid-range shots than other, it isn't until the most recent 3 years of charts in particular that the difference is most visible.
+-   The number of three-point shots is greater in the more recent years than in the earlier years of shot charts. The specific areas outside the three-point arc that are more different when comparing the earliest years to the most recent years are the two wings and the top of the key. The years 2018, 2019, and 2020 all feature shots that are further away from the basket than most of the previous years. Especially the years 2001, 2002, and 2003. These early years also show little to no shots in the upper three-point corners where the arc starts. This is something that changed rather quickly with more shots being taken in that area starting in 2004 and being evident through 2020.
+-   Shots inside the lane also have changed over the years. The later shot charts 2017, 2018, 2019, and 2020 have much more concentration of shot bins inside the lane with very few areas that have no shots taken. From the years 2001 to 2016 there are much more visible areas inside the lane where little to no shots were taken. Mostly the further part of the lane closest to the free throw line feature very few shot bins. It seems that with the decreasing number of mid-range shots being taken, both three-point and short-range shots increased. This is understandable especially when considering that, when three-point shots aren't as popular, defenders can stay back a little further from defenders and guard the lane more. But when three-point shots are being taken and made in higher amounts, defenders need to guard further out and can be beaten more easily to get those shorter range shots.
+
+## Additional Information Graphic
+
+```{r, fig.height=5, fig.width=5, fig.align='center', warning=FALSE, echo=FALSE}
+chart2020
+```
+
+-   This additional graphic is the single season graphic for the Phoenix Suns shot chart data in the 2019-2020 regular season. This shows the distribution of shots taken by each player position group on the basketball court. This graphic shows that Centers are more likely to take shots from mid-range or closer with some exceptions being the top of the key three point shot. It then shows that Guards and Forwards seem to take much similar shots, both taking high numbers of threes with Guards seeming to take more mid-range shots than the other positions.
