@@ -9,7 +9,7 @@ output: word_document
 
 ```{r, include=FALSE, warning=FALSE, echo=FALSE, messages=FALSE, results="hide"}
 # Calling all the Code to produce the graphics
-source("~/R Scripts/Shot Charts.R")
+source("~/Desktop/Stat 345/Projects/Midterm Project/Shot Charts.R")
 ```
 
 ```{r, fig.height=8, fig.width=8, fig.align='center', warning=FALSE, echo=FALSE}

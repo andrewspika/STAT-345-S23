@@ -1,6 +1,6 @@
 
 # Call all necessary packages from Library and Functions for producing graphics
-source("~/Desktop/Stat 345/Projects/Midterm/LibraryCalls.R")
+source("~/Desktop/Stat 345/Projects/Midterm Project/LibraryCalls.R")
 library(nbastatR)
 
 # Set the System Environment to handle data sizes
