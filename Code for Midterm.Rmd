@@ -1,0 +1,188 @@
+---
+title: "Code for Phoenix Suns Shot Charts - Midterm"
+font: 12pt
+name: "Andrew Spika"
+output: word_document
+---
+
+# Initial Plan of Action
+
+## Calling Packages and Downloading Data
+
+The first step is to call all the necessary packages and data from the library. The packages that were used are all contained in my own R script file that was sourced to call the packages. Since the 'nbastatR' data was used, the download for it was as follows:
+
+    library(devtools)
+    devtools::install_github("abresler/nbastatR")
+
+Following this, the data can be called from the library and next the VROOM_CONNECTION_SIZE in the system environment may need to be increased for the data to be gathered. I did this by increasing the current size by a 10 times. Shown in the following code:
+
+```{r, echo=FALSE}
+# All the library calls necessary are included in my own personal R script file from which I source all the packages I use and more
+source("~/Desktop/Stat 345/Projects/Midterm/LibraryCalls.R")
+
+# Calling the'nbastatR' data from the library after it's downloaded
+library(nbastatR)
+
+# Increasing the VROOM_CONNECTION_SIZE to handle the data size
+Sys.setenv("VROOM_CONNECTION_SIZE" = 131072*100)
+```
+
+## Gathering Shot Data for a Single Season and Multiple Seasons
+
+-   The first objective was to gather data for a single season of a team. This was done for the Phoenix Suns and their 2019-2020 Regular Season. The Regular Season data is the default for one of the functions in the 'nbastatR' data package that gathers the shot data. This function was the 'teams_shots()' function. I then, after looking through the entire data table, filtered the data a little bit to only include what I thought would be necessary to create the shot charts. This included the X and Y locations of the shots, whether the shot was made, and I also included the distance the shot was taken from for extra information. This code is as follows:
+
+```{r, echo=FALSE}
+# Gather data for Phoenix Suns team shots for the 2020 regular season
+suns.shots <- teams_shots(teams = "Phoenix Suns", seasons = 2020)
+
+# Optional filtering of data to only include the variables necessary
+suns.shots <- suns.shots %>% 
+  select(c(yearSeason, locationX, locationY, isShotMade, distanceShot))
+```
+
+-   In order to get multiple seasons, I needed to have a vector of all the desired Season years, plug them each individually into the 'teams_shots()' function, and then bind them all into one tibble by adding all the rows from each list in the 'years' large list. The code for this is as follows:
+
+```{r, echo=FALSE}
+# Vector of all the years that shot data is wanted 
+year <- c(2001:2020)
+
+# Function to gather each year of data
+# Inputs: a vector of years
+# Outputs: team shot data for Phoenix Suns in the given year (x)
+year_function <- function(x) {
+  teams_shots(teams = "Phoenix Suns", seasons = x)
+}
+
+# Apply the year_function to each year in the year vector
+years <- lapply(year, year_function)
+
+# Bind the lists together for the data for all the years
+suns.shots.20yrs <- list_rbind(years)
+```
+
+## Creating the First Shot Chart for 2019-2020 Regular Season and then the Faceted Shot Charts for 20 Seasons
+
+-   The shot chart for the 2019-2020 Regular Season for the Phoenix Suns was the first one I made. A couple questions needed to be answered to complete this. One being how I would draw a basketball court on the charts that fit in with the data and it look professional. I ended up creating my own function to draw the court in by taking a data frame as a parameter and returning a ggplot with the essential NBA court lines to show the data clearly. I only used the NBA half court because it contained the vast majority of the shots, and any shots near or past half court are usually forced or throw-away shots with little meaning from a strategy standpoint. Therefore, through segments and curves and circles I created the following function in an R script file that could be sourced later:
+
+```{r, echo=FALSE}
+## source("~/Desktop/Stat 345/Projects/Midterm/NBACourtFunction.R")
+
+# Function to take a tibble and returns a new ggplot with the NBA court drawn in on the graph
+# Inputs: tibble as variable 'data'
+# Outputs: ggplot with NBA court drawn in
+NBAcourtWrite <- function(data = tibble()) {
+  court <- data %>% ggplot() +
+    geom_segment(aes(22, -4, xend=22, yend=10)) +
+    geom_segment(aes(-25, -4, xend=25, yend=-4)) + 
+    geom_segment(aes(-22, -4, xend=-22, yend=10)) + 
+    geom_segment(aes(-6, -4, xend=-6, yend=15)) + 
+    geom_segment(aes(6, -4, xend=6, yend=15)) + 
+    geom_segment(aes(-25, -4, xend=-25, yend=43)) + 
+    geom_segment(aes(25, -4, xend=25, yend=43)) +
+    geom_segment(aes(-8, 15, xend=8, yend=15)) + 
+    geom_segment(aes(-8, -4, xend=-8, yend=15)) + 
+    geom_segment(aes(8, -4, xend=8, yend=15)) + 
+    geom_segment(aes(-25, 43, xend=25, yend=43)) + 
+    geom_circle(aes(x0=0, y0=15, r=6), inherit.aes = FALSE) + 
+    geom_curve(aes(22, 10, xend=-22, yend=10), curvature=0.7) +
+    coord_fixed(ratio=1, xlim=c(-25, 25), ylim=c(-4, 43))
+  
+  return(court)
+}
+```
+
+-   Next, using the 'NBAcourtFunction' that I defined, I created the shot chart for the Phoenix Suns 2019-2020 Regular Season. When doing this the 'locationX' and 'locationY' variables are in units and are in the positive and negative hundreds. Since this doesn't match with any usual metric, I put them in as such and referenced them to what the actual court dimensions are. The shots that represent a three point arc should be at or further from the hoop than the arc. This was not the case in their normal units, but when I divided each by 10 I got something that looked very accurate in scale to an actual NBA court. I tried dividing them by 12 with the thought that they might be in inches, but this didn't match up with the court. Therefore I concluded for myself that the normal units for the 'locationX' and 'locationY' were in feet but multiplied by 10. The next obstacle was the very large number of shots over the season that cluttered the graph with points. To get around this I used 'geom_hex' to put the shots into hex bins that represent an area of the court. If the majority of the shots in a certain area were made, the bin would be orange, and if the majority in an area were missed, the bin would be purple. These colors were chosen to match the Phoenix Suns' team colors. This was achieved by setting the mapping for fill to be the Boolean column 'isShotMade'. I also decided through trial and error that a bin count of 75 looked both uncluttered and descriptive enough of the actual shot distributions. The following code is this:
+
+```{r, echo=FALSE}
+# Creating shot chart with data and new function 'NBACourtWrite' that writes in the NBA court on the same ggplot
+# Shot Charts are binned in hexagonal bins so that there are 75 bins
+shot.chart <- suns.shots %>% 
+  NBAcourtWrite() +
+  geom_hex(aes(locationX/10, locationY/10, fill=isShotMade), bins=75) + 
+  scale_fill_discrete(labels=c("Miss", "Make"), type=c("purple", "orange")) + 
+  labs(fill="", x="X Distance from the Hoop (ft)", y="Y Distance from the Hoop (ft)", title="Phoenix Suns 2019-2020 Regular Season Shot Chart")
+```
+
+-   Next, to apply it to multiple seasons, I did the same steps basically, but I faceted them by year. I added the 'facet_wrap' to the ggplot and got the following code:
+
+```{r, echo=FALSE}
+# 20 years worth of shot charts for the Phoenix Suns, faceted by year, 'NBACourtWrite' function used to draw the court
+# Shot charts are binned in hexagonal bins so that there are 75 bins on each chart, orange respresenting more shots being made in an area and purple meaning more shots are missed in an area
+shot.chart.20yrs <- suns.shots.20yrs %>% 
+  select(c(yearSeason, locationX, locationY, isShotMade, distanceShot)) %>%
+  NBAcourtWrite() + 
+  geom_hex(aes(locationX/10, locationY/10, fill=isShotMade), bins=75) +
+  scale_fill_discrete(labels=c("Miss", "Make"), type=c("purple", "orange")) +
+  labs(fill="", x="X Distance from the Hoop (ft)", y="Y Distance from the Hoop (ft)", title="Suns Shot Charts Over 20 Seasons") +
+  facet_wrap(vars(yearSeason))
+```
+
+## Revising the Shot Charts of Multiple Seasons
+
+-   After looking through the shot charts for the 20 Season span, I decided the most descriptive and telling charts of the differences over the 20 season happened in the earliest and most recent years. Therefore, to have the shot charts less cluttered, I decided to recreate the faceted charts using the first 5 and the last 5 seasons in the 20 year span. This was done by updating the vector of years that I used to gather to multiple season data and then using this new tibble for the rest of the process. The code for this is as follows:
+
+```{r, echo=FALSE}
+## First and Last 5 Years of Suns Shot Data for 10 Shot Charts showing most difference
+
+# Desired years
+first.last.5 <- c(2001, 2002, 2003, 2004, 2005, 2016, 2017, 2018, 2019, 2020) 
+
+# Apply to the years
+ten.years <- lapply(first.last.5, year_function)
+
+# Bind together ten.years
+suns.shots.10yrs <- list_rbind(ten.years)
+
+# First and last 5 years of Shot Charts for Phoenix Suns. Showing the most notable changes
+shot.chart.first.last.5yrs <- suns.shots.10yrs %>%
+  select(c(yearSeason, locationX, locationY, isShotMade, distanceShot)) %>%
+  NBAcourtWrite() + 
+  geom_hex(aes(locationX/10, locationY/10, fill=isShotMade), bins=75) +
+  scale_fill_discrete(labels=c("Miss", "Make"), type=c("purple", "orange")) +
+  labs(fill="", x="X Distance from the Hoop (ft)", y="Y Distance from the Hoop (ft)", title="Suns Shot Charts Over 20 Seasons") +
+  facet_wrap(vars(yearSeason))
+```
+
+## Going Further
+
+-   For the final section, I needed to apply additional information to make a new graphic. Also, this new information needed to be from a different function call in the 'nbastatR' data. I decided to get the NBA team roster information for the 2019-2020 season and found information that wasn't present in the team shot chart data. This being the positions of each of the players on the roster. I decided I wanted to show in my new graphic the positions of each player and each shot. To do this I gathered the new roster data, filtered it so only the Phoenix Suns players were showing. Then, because there were a higher number of positions, some representing two positions like 'F-G' or 'C-F', I decided to put these into 3 different groups being: 'G' for Guards, 'F' for Forwards, and 'C' for Centers. Then I joined the roster data with the shot chart data and finished by making the graphic. I used geom_point and made the colors the position, and shape whether the shot was made or missed. I also added opacity to deal with overlapping points better. The code for all of this is here:
+
+```{r, echo=FALSE}
+# Use the 2020 shot chart data for the Suns
+shots2020 <- teams_shots(teams="Phoenix Suns", seasons=2020)
+
+# Gather extra information from a different function call in 'nbastatR'
+extraInfo <- teams_rosters(seasons=2020) 
+
+# Filter so that only the Phoenix Suns roster is in the set
+extraInfo <- extraInfo %>% filter(nameTeam=="Phoenix Suns")
+
+# Setting the 'groupPosition' column values to fit into 3 categories: 'G', 'F', and 'C' meaning 'Guard", 'Forward', and 'Center', respectively
+# This step cleans up the data so that the graphic doesn't have a lot of colors
+extraInfo$groupPosition[which(extraInfo$groupPosition=="G-F")] <- "G"
+extraInfo$groupPosition[which(extraInfo$groupPosition=="C-F")] <- "C"
+extraInfo$groupPosition[which(extraInfo$groupPosition=="F-C" | extraInfo$groupPosition=="F-G")] <- "F"
+
+# Join the 'extraInfo' with the shot chart data 'shots2020' by the 'namePlayer' column since they both share this
+shots2020 <- shots2020 %>% left_join(extraInfo, by="namePlayer")
+
+# A new graphic of the 2019-2020 Phoenix Suns Regular Season shot chart data, this time with the color representing the position of the players that took the shot and the shape (an 'x' for miss and a 'o' for make) representing whether the shot was made
+chart2020 <- shots2020 %>% 
+  NBAcourtWrite() + 
+  geom_point(aes(locationX/10, locationY/10, shape=isShotMade, color=groupPosition, alpha=0.7), size=2) +
+  scale_shape_manual(labels=c("Miss", "Make"), values = c(4, 1)) + 
+  scale_color_discrete(labels=c("Center", "Forward", "Guard"), type=c("black", "purple", "orange")) +
+  labs(color="Position", shape="", alpha="", size="", title="2019-2020 Regular Season Suns Shot Chart", x="X Distance from the Hoop", y="Y Distance from the Hoop")
+```
+
+
+## Ending Summaries
+
+This project posed a lot of opportunities to get more familiarized with R studio, different packages, elements of ggplots, and using data to show trends or differences in trends on a topic. There were some judgement calls necessary to complete the project and decisions on courses of action. Some of these were best found through trial and error and then being able to justify the decisions. Using both the internet and other resources was very effective in learning how to do different parts of the project or apply previous knowledge to complete each task. Overall, this project was enjoyable and a positive experience of coding in R. The information presented in the graphics were also interesting to a basketball fan like myself.
+
+Also: All the code can also be called from an additional R script that I made:
+
+```{r, echo=FALSE}
+source("~/R Scripts/Shot Charts.R")
+```
+
